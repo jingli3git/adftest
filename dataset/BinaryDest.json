@@ -1,0 +1,34 @@
+{
+	"name": "BinaryDest",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "tutorial1adlsgen2storage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"foldername": {
+				"type": "string"
+			},
+			"filename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().filename",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().foldername",
+					"type": "Expression"
+				},
+				"fileSystem": "datadestination"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

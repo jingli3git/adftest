@@ -1,0 +1,13 @@
+{
+	"name": "SharedSHIR",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "Use the same SHIR as Dev-Lab",
+		"typeProperties": {
+			"linkedInfo": {
+				"resourceId": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourcegroups/Tutorial1/providers/Microsoft.DataFactory/factories/Dev-Lab/integrationruntimes/AzureVMStandaloneSHIR",
+				"authorizationType": "Rbac"
+			}
+		}
+	}
+}

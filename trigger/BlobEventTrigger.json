@@ -1,0 +1,27 @@
+{
+	"name": "BlobEventTrigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "RecursivelyReadingDatafromADLS",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"foldername": "@triggerBody().folderPath"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/datasource/blobs/",
+			"ignoreEmptyBlobs": false,
+			"scope": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourceGroups/Tutorial1/providers/Microsoft.Storage/storageAccounts/tutoriallab",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}

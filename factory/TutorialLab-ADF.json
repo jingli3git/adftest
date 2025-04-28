@@ -1,0 +1,9 @@
+{
+	"name": "TutorialLab-ADF",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "53a6d1a7-2d7c-4d8e-9a5a-5231698c2ec5",
+		"tenantId": "16b3c013-d300-468d-ac64-7eda0820b6d3"
+	}
+}
