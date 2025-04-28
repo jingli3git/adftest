@@ -11,6 +11,7 @@
 		"connectVia": {
 			"referenceName": "AzureIRwManagedVnet",
 			"type": "IntegrationRuntimeReference"
-		}
+		},
+		"description": "change IR"
 	}
 }
