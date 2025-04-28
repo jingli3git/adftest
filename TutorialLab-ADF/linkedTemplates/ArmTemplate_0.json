@@ -1,0 +1,768 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "TutorialLab-ADF"
+		},
+		"tutorial1adlsgen2storage_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'tutorial1adlsgen2storage'"
+		},
+		"SharedSHIR_properties_typeProperties_linkedInfo_resourceId": {
+			"type": "string",
+			"defaultValue": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourcegroups/Tutorial1/providers/Microsoft.DataFactory/factories/Dev-Lab/integrationruntimes/AzureVMStandaloneSHIR"
+		},
+		"tutorial1adlsgen2storage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://tutoriallab.dfs.core.windows.net/"
+		},
+		"BlobEventTrigger_properties_RecursivelyReadingDatafromADLS_parameters_foldername": {
+			"type": "string",
+			"defaultValue": "@triggerBody().folderPath"
+		},
+		"BlobEventTrigger_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourceGroups/Tutorial1/providers/Microsoft.Storage/storageAccounts/tutoriallab"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/SharedSHIR')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"description": "Use the same SHIR as Dev-Lab",
+				"typeProperties": {
+					"linkedInfo": {
+						"resourceId": "[parameters('SharedSHIR_properties_typeProperties_linkedInfo_resourceId')]",
+						"authorizationType": "Rbac"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/default')]",
+			"type": "Microsoft.DataFactory/factories/managedVirtualNetworks",
+			"apiVersion": "2018-06-01",
+			"properties": {},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureIRwManagedVnet')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "East US",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false,
+							"customProperties": []
+						},
+						"pipelineExternalComputeScaleProperties": {
+							"timeToLive": 60,
+							"numberOfPipelineNodes": 1,
+							"numberOfExternalNodes": 1
+						}
+					}
+				},
+				"managedVirtualNetwork": {
+					"type": "ManagedVirtualNetworkReference",
+					"referenceName": "default"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/managedVirtualNetworks/default')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tutorial1adlsgen2storage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('tutorial1adlsgen2storage_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('tutorial1adlsgen2storage_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AzureIRwManagedVnet",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/AzureIRwManagedVnet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDataDestination')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "It describes the destination store.",
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "String"
+					},
+					"Directory": {
+						"type": "String"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@{dataset().Directory}",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@{dataset().Container}",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDataSource_File')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "It describes the file in the data source store.",
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "String"
+					},
+					"Directory": {
+						"type": "String"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@{dataset().Directory}",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@{dataset().Container}",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDataSource_Folder')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "It describes the folder in the data source store.",
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "String"
+					},
+					"Directory": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@{dataset().Directory}",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@{dataset().Container}",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"foldername": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().foldername",
+							"type": "Expression"
+						},
+						"fileSystem": "datadestination"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinarywithParameter')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"foldername": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().foldername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Binarywithfolderparameter')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "tutorial1adlsgen2storage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"foldername": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().foldername",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/tutorial1adlsgen2storage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MoveFilesTemplate')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Move files from one folder to another folder",
+				"activities": [
+					{
+						"name": "GetFileList",
+						"description": "Get the list of file",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "BinaryDataSource_Folder",
+								"type": "DatasetReference",
+								"parameters": {
+									"Container": {
+										"value": "@pipeline().parameters.SourceStore_Location",
+										"type": "Expression"
+									},
+									"Directory": {
+										"value": "@pipeline().parameters.SourceStore_Directory",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true
+							},
+							"formatSettings": {
+								"type": "BinaryReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEachFile",
+						"description": "Iterate each file, and move them one by one.",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "FilterFiles",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('FilterFiles').output.value",
+								"type": "Expression"
+							},
+							"batchCount": 20,
+							"activities": [
+								{
+									"name": "CopyAFile",
+									"description": "Copy a file from the source store to the destination store.",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											},
+											"recursive": false
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"dataIntegrationUnits": 0
+									},
+									"inputs": [
+										{
+											"referenceName": "BinaryDataSource_File",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@pipeline().parameters.SourceStore_Location",
+													"type": "Expression"
+												},
+												"Directory": {
+													"value": "@pipeline().parameters.SourceStore_Directory",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "BinaryDataDestination",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@pipeline().parameters.DestinationStore_Location",
+													"type": "Expression"
+												},
+												"Directory": {
+													"value": "@pipeline().parameters.DestinationStore_Directory",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "DeleteAFile",
+									"description": "Delete a file from the source store",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "CopyAFile",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "BinaryDataSource_File",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@pipeline().parameters.SourceStore_Location",
+													"type": "Expression"
+												},
+												"Directory": {
+													"value": "@pipeline().parameters.SourceStore_Directory",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "FilterFiles",
+						"description": "Only files will be selected, the source-folders will not be selected.",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "GetFileList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GetFileList').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@equals(item().type, 'File')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"SourceStore_Location": {
+						"type": "String"
+					},
+					"SourceStore_Directory": {
+						"type": "String"
+					},
+					"DestinationStore_Location": {
+						"type": "String"
+					},
+					"DestinationStore_Directory": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-04-28T06:31:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/BinaryDataSource_Folder')]",
+				"[concat(variables('factoryId'), '/datasets/BinaryDataSource_File')]",
+				"[concat(variables('factoryId'), '/datasets/BinaryDataDestination')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RecursivelyReadingDatafromADLS')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "Binarywithfolderparameter",
+								"type": "DatasetReference",
+								"parameters": {
+									"foldername": {
+										"value": "@pipeline().parameters.foldername",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems",
+								"itemName"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "BinaryReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Metadata1').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"deleteFilesAfterCompletion": false
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "BinarywithParameter",
+											"type": "DatasetReference",
+											"parameters": {
+												"foldername": {
+													"value": "@pipeline().parameters.foldername",
+													"type": "Expression"
+												},
+												"filename": "@item().name"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "BinaryDest",
+											"type": "DatasetReference",
+											"parameters": {
+												"foldername": {
+													"value": "@activity('Get Metadata1').output.itemName",
+													"type": "Expression"
+												},
+												"filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"foldername": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"folderfiles": {
+						"type": "Array"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-04-28T06:31:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Binarywithfolderparameter')]",
+				"[concat(variables('factoryId'), '/datasets/BinarywithParameter')]",
+				"[concat(variables('factoryId'), '/datasets/BinaryDest')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BlobEventTrigger')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "RecursivelyReadingDatafromADLS",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"foldername": "[parameters('BlobEventTrigger_properties_RecursivelyReadingDatafromADLS_parameters_foldername')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/datasource/blobs/",
+					"ignoreEmptyBlobs": false,
+					"scope": "[parameters('BlobEventTrigger_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/RecursivelyReadingDatafromADLS')]"
+			]
+		}
+	]
+}

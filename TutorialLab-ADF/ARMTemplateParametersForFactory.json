@@ -1,0 +1,24 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "TutorialLab-ADF"
+		},
+		"tutorial1adlsgen2storage_accountKey": {
+			"value": ""
+		},
+		"tutorial1adlsgen2storage_properties_typeProperties_url": {
+			"value": "https://tutoriallab.dfs.core.windows.net/"
+		},
+		"BlobEventTrigger_properties_RecursivelyReadingDatafromADLS_parameters_foldername": {
+			"value": "@triggerBody().folderPath"
+		},
+		"BlobEventTrigger_properties_typeProperties_scope": {
+			"value": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourceGroups/Tutorial1/providers/Microsoft.Storage/storageAccounts/tutoriallab"
+		},
+		"SharedSHIR_properties_typeProperties_linkedInfo_resourceId": {
+			"value": "/subscriptions/77eb781b-2934-49ae-ad99-a2e3293717fd/resourcegroups/Tutorial1/providers/Microsoft.DataFactory/factories/Dev-Lab/integrationruntimes/AzureVMStandaloneSHIR"
+		}
+	}
+}
