@@ -12,6 +12,6 @@
 			"referenceName": "AzureIRwManagedVnet",
 			"type": "IntegrationRuntimeReference"
 		},
-		"description": "change IR"
+		"description": "change IR with vnet"
 	}
 }
